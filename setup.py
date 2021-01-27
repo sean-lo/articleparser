@@ -1,5 +1,7 @@
 import setuptools
 
+from articleparser.version import __version__
+
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
@@ -8,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="articleparser",
-    version="0.1.2",
+    version=__version__,
     author="Sean Lo",
     author_email="seanlo96@hotmail.com",
     description="Extracts structured data from web articles.",
