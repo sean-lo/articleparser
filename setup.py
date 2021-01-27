@@ -1,5 +1,8 @@
 import setuptools
 
+with open("requirements.txt") as f:
+    requirements = f.read().splitlines()
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -20,13 +23,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    install_requires=[
-        "beautifulsoup4>=4.8",
-        "django>=3.0",
-        "html5lib>=1.1",
-        "language-tags>=1.0.0",
-        "lxml>=4.5.0",
-        "python-dateutil>=2.8.0",
-    ],
+    install_requires=requirements,
     python_requires=">=3.8",
 )
