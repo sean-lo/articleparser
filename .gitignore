@@ -125,5 +125,4 @@ dmypy.json
 .pyre/
 
 # extension files/
-/articleparser/api.py
-/articleparser/output.py
+/output

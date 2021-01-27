@@ -17,7 +17,9 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sean-lo/articleparser",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(
+        exclude=["output"],
+    ),
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
         "Development Status :: 3 - Alpha",
