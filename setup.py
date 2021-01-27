@@ -28,3 +28,10 @@ setuptools.setup(
     install_requires=requirements,
     python_requires=">=3.8",
 )
+
+# To publish a new version on PyPI,
+# 1) check that your version number (in version.py) has been incremented
+# 2) check your requirements in requirements.txt have been updated
+# 3) verify that you are in a virtual environment with twine installed
+# 4) run "py setup.py sdist bdist_wheel"
+# 5) run "twine upload dist/*"
