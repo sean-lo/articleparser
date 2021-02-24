@@ -17,6 +17,7 @@ import difflib
 import logging
 import re
 from typing import Any, Optional
+import unicodedata
 from urllib.parse import urljoin, urlparse, parse_qs
 
 import bs4
@@ -1669,6 +1670,16 @@ class ArticleExtractor(AssetExtractor):
 
         return {itemprop: value for itemprop in itemprop_list}
 
+    @staticmethod
+    def _process_short_field(
+        text: str,
+    ) -> str:
+        # strips leading and trailing whitespace
+        text = text.strip()
+        # normalization: replaces "\u00a0" and "\xa0" with single whitespace
+        text = unicodedata.normalize("NFKC", text)
+        return text
+
     def extract_page_url(self) -> (Optional[str], Optional[str]):
         """Extracts page URL from `self.soup`.
 
@@ -1890,7 +1901,7 @@ class ArticleExtractor(AssetExtractor):
                             "image_url": author_item.get("image_url"),
                         }
                     )
-
+        new_author_list.sort(key=lambda x: (x["name"], x["url"], x["image_url"]))
         return new_author_list
 
     def extract_authors(self) -> (list[dict[str, Optional[str]]], str):
@@ -2059,7 +2070,7 @@ class ArticleExtractor(AssetExtractor):
             if len(json_ld_author_list) != 0:
                 author_list = json_ld_author_list
                 LOGGER.debug("Using author list from JSON-LD metadata.")
-                return author_list, "json_ld"
+                return self._process_author_list(author_list), "json_ld"
 
         for tag in self.soup.select("head meta[name='author']"):
             x = tag.get("content")
@@ -2070,7 +2081,7 @@ class ArticleExtractor(AssetExtractor):
                     author_list.append({"name": x, "url": None})
         if len(author_list) > 0:
             LOGGER.debug("Using authors from <meta> tags in <head>.")
-            return author_list, "head"
+            return self._process_author_list(author_list), "head"
 
         ogp_author_list = metadata_ogp.get("article:author")
         if len(ogp_author_list) != 0:
@@ -2081,7 +2092,7 @@ class ArticleExtractor(AssetExtractor):
                 else:
                     author_list.append({"name": x, "url": None})
             LOGGER.debug("Using author list from OGP metadata.")
-            return author_list, "ogp"
+            return self._process_author_list(author_list), "ogp"
 
         LOGGER.info("No authors found.")
         return [], None
@@ -2123,17 +2134,17 @@ class ArticleExtractor(AssetExtractor):
             description = description_tag.get("content")
             if description is not None:
                 LOGGER.debug("Using description from <head>.")
-                return description, "head"
+                return self._process_short_field(description), "head"
 
         description = metadata_json_ld.get("description")
         if description is not None:
             LOGGER.debug("Using description from JSON-LD metadata.")
-            return description, "json_ld"
+            return self._process_short_field(description), "json_ld"
 
         description = metadata_ogp.get("og:description")
         if description is not None:
             LOGGER.debug("Using description from OGP metadata.")
-            return description, "ogp"
+            return self._process_short_field(description), "ogp"
 
         # assumes that only one such tag can exist
         description_tag = self.soup.select_one("head meta[name='twitter:description']")
@@ -2141,7 +2152,7 @@ class ArticleExtractor(AssetExtractor):
             description = description_tag.get("content")
             if description is not None:
                 LOGGER.debug("Using description from 'twitter:description' <meta> tag.")
-                return description, "twitter"
+                return self._process_short_field(description), "twitter"
 
         LOGGER.info("No description found.")
         return None, None
@@ -2302,8 +2313,12 @@ class ArticleExtractor(AssetExtractor):
         self,
         keywords: list[str],
     ) -> list[str]:
+        # short text preprocessing
+        keywords = [self._process_short_field(x) for x in keywords]
+
         # remove duplicates
         keywords = list(set(keywords))
+
         collector = defaultdict(list)
         for keyword in keywords:
             collector[keyword.lower()].append(keyword)
@@ -2534,15 +2549,15 @@ class ArticleExtractor(AssetExtractor):
         title = metadata_json_ld.get("headline")
         if title is not None:
             LOGGER.debug("Using title from 'headline' field in JSON-LD metadata.")
-            return title, "json_ld_headline"
+            return self._process_short_field(title), "json_ld_headline"
         title = metadata_json_ld.get("name")
         if title is not None:
             LOGGER.debug("Using title from 'name' field in JSON-LD metadata.")
-            return title, "json_ld_name"
+            return self._process_short_field(title), "json_ld_name"
         title = metadata_ogp.get("og:title")
         if title is not None:
             LOGGER.debug("Using title from OGP metadata.")
-            return title, "ogp"
+            return self._process_short_field(title), "ogp"
 
         def tag_has_itemprop_headline(tag):
             itemprop = tag.get("itemprop")
@@ -2555,31 +2570,37 @@ class ArticleExtractor(AssetExtractor):
             title = self._get_value_of_itemprop_element(title_tag).get("headline")
             if title:
                 LOGGER.debug("Using title from tags with itemprop containing 'headline'.")
-                return title, "itemprop_headline"
+                return self._process_short_field(title), "itemprop_headline"
 
         h1_list = self.soup.find_all("h1")
         if len(h1_list) == 1:
             title = h1_list[0].get_text().strip()
             if len(title) > 0:
                 LOGGER.debug("Using title from the only <h1> tag.")
-                return title, "h1"
+                return self._process_short_field(title), "h1"
         elif len(h1_list) > 1:
             h1_id_list = self.soup.select("h1[id*='title']")
             if h1_id_list:
                 LOGGER.debug("Using title from <h1> tag with id='title'.")
-                return h1_id_list[0].get_text().strip(), "h1_title_headline"
+                return self._process_short_field(h1_id_list[0].get_text()), "h1_title_headline"
             h1_id_list = self.soup.select("h1[id*='headline']")
             if h1_id_list:
                 LOGGER.debug("Using title from <h1> tag with id='headline'.")
-                return h1_id_list[0].get_text().strip(), "h1_title_headline"
+                return self._process_short_field(h1_id_list[0].get_text()), "h1_title_headline"
             h1_class_list = self.soup.select("h1[class*='title']")
             if h1_class_list:
                 LOGGER.debug("Using title from <h1> tag with class containing 'title'.")
-                return h1_class_list[0].get_text().strip(), "h1_title_headline"
+                return (
+                    self._process_short_field(h1_class_list[0].get_text()),
+                    "h1_title_headline",
+                )
             h1_class_list = self.soup.select("h1[class*='headline']")
             if h1_class_list:
                 LOGGER.debug("Using title from <h1> tag with class containing 'headline'.")
-                return h1_class_list[0].get_text().strip(), "h1_title_headline"
+                return (
+                    self._process_short_field(h1_class_list[0].get_text()),
+                    "h1_title_headline",
+                )
 
         # Extract title from the html > head > title tag.
         # The HTML document MUST contain exactly one <head> element followed by
@@ -2603,7 +2624,7 @@ class ArticleExtractor(AssetExtractor):
         title = title_tag.string.strip()
         if not clean:
             LOGGER.debug("Using title from <title> tag!")
-            return title, "title"
+            return self._process_short_field(title), "title"
 
         TITLE_REGEX = re.compile(
             r"""
@@ -2615,8 +2636,7 @@ class ArticleExtractor(AssetExtractor):
         )
 
         matchlist = re.split(TITLE_REGEX, title)
-        matchlist = [x.strip() for x in matchlist]
-        matchlist = [x for x in matchlist if len(x) > 0]
+        matchlist = [x.strip() for x in matchlist if len(x.strip()) > 0]
         if len(matchlist) == 0:
             LOGGER.debug("No parts found in <title>!")
             LOGGER.info("No title found.")
@@ -2624,7 +2644,7 @@ class ArticleExtractor(AssetExtractor):
         else:
             title = max(matchlist, key=len)
             LOGGER.debug("Using title from <title> tag!")
-            return title, "title_cleaned"
+            return self._process_short_field(title), "title_cleaned"
 
     def set_base_tag(self) -> None:
         """Sets the base tag from which to extract assets.
