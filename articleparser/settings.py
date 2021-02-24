@@ -577,7 +577,7 @@ IFRAME_SRC_ASSETS = {
     "instagram": {  # https://developers.facebook.com/docs/instagram/oembed/
         r"www\.instagram\.com": {
             r"\/tv\/[a-zA-Z0-9_-]+\/embed\/(captioned\/)?": "video",
-            r"\/p\/[a-zA-Z0-9_-]+\/embed\/": "links",  # Post
+            r"\/p\/[a-zA-Z0-9_-]+\/embed\/(captioned\/)?": "links",  # Post
         },
     },
     "okezone": {

@@ -162,7 +162,7 @@ class AssetExtractor(object):
         ".jpeg",
         ".jpe",
         ".jif",
-        "jfif",
+        ".jfif",
         ".png",
         ".gif",
         ".avif",
@@ -2295,7 +2295,44 @@ class ArticleExtractor(AssetExtractor):
             LOGGER.info("No keywords found.")
             return [], []
         else:
+            all_keywords = self._process_keywords_list(list(all_keywords))
             return list(all_keywords), methods
+
+    def _process_keywords_list(
+        self,
+        keywords: list[str],
+    ) -> list[str]:
+        # remove duplicates
+        keywords = list(set(keywords))
+        collector = defaultdict(list)
+        for keyword in keywords:
+            collector[keyword.lower()].append(keyword)
+        new_keywords = []
+        for key, option_list in collector.items():
+            if len(option_list) == 0:
+                continue
+            if len(option_list) == 1:
+                new_keywords.append(option_list[0])
+                continue
+            lower = None
+            title = None
+            upper = None
+            for option in option_list:
+                if option.islower():
+                    lower = option
+                elif option.istitle():
+                    title = option
+                elif option.isupper():
+                    upper = option
+            if title:
+                new_keywords.append(title)
+            elif upper:
+                new_keywords.append(upper)
+            elif lower:
+                new_keywords.append(lower)
+            else:
+                new_keywords.append(option_list[0])
+        return sorted(new_keywords)
 
     def extract_timestamps(
         self,
