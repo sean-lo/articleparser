@@ -499,21 +499,19 @@ class AssetExtractor(object):
 
             # iterable defines preference of MIME types for multiple <source> tags in <video>
             for mime_type in self.VIDEO_MIME_TYPES:
-                video_list = [
-                    self._make_video_item(
-                        tag_name="video",
-                        height=height,
-                        width=width,
-                        src=source_tag.get("src"),  # required attribute
-                        page_url=self.page_url,
-                        mime_type=mime_type,
-                    )
-                    for source_tag in source_list
-                    if source_tag.get("type") == mime_type
-                ]
-                if video_list:
-                    self.video_list.append(video_list[0])
-                    return
+                for source_tag in source_list:
+                    if source_tag.get("type") == mime_type:
+                        self.video_list.append(
+                            self._make_video_item(
+                                tag_name="video",
+                                height=height,
+                                width=width,
+                                src=source_tag.get("src"),  # required attribute
+                                page_url=self.page_url,
+                                mime_type=mime_type,
+                            )
+                        )
+                        return
 
             return
 
@@ -1076,10 +1074,10 @@ class AssetExtractor(object):
             src = query_obj.get("src")[0]
 
         for mime_type in cls.IMAGE_MIME_SUFFIXES:
-            if src_parse.path.endswith(mime_type):
+            if src_parse.path.lower().endswith(mime_type):
                 return True
             elif src:
-                if src.endswith(mime_type):
+                if src.lower().endswith(mime_type):
                     return True
         return False
 
@@ -3144,8 +3142,12 @@ class ArticleExtractor(AssetExtractor):
             choices = self.TEXT_TO_COLLECT_LISTS[-1]
 
         text_list = []
-        tags_list = top_tag.find_all(choices)
+        if top_tag.name in choices:
+            tags_list = [top_tag] + top_tag.find_all(choices)
+        else:
+            tags_list = top_tag.find_all(choices)
         # tags_list may contain duplicated content from nested tags.
+
         while tags_list:
             tag = tags_list.pop(0)
 
