@@ -412,7 +412,7 @@ class AssetExtractor(object):
     def _write_src_to_log(self, src: str, error_type: str, func: str) -> None:
         """Write unrecognized `src` attributes in `<iframe>` to a log file.
 
-        Written December 2020.
+        Written February 2021.
 
         Parameters
         ----------
@@ -435,8 +435,6 @@ class AssetExtractor(object):
             "Article URL: {}".format(self.page_url),
         ]
         message = " - ".join(message_list)
-        with open("/ap_data/iframe_src_log.txt", "ab+") as f:
-            f.write((message + "\n").encode("utf-8"))
         LOGGER.debug(message.encode("utf-8"))
         return
 
@@ -642,7 +640,7 @@ class AssetExtractor(object):
 
         If `base_tag` is not set, call `set_base_tag()` first.
 
-        Written January 2021.
+        Written February 2021.
 
         Parameters
         ----------
@@ -661,7 +659,7 @@ class AssetExtractor(object):
             href = anchor.get("href")
             if href:
                 # detects URL paths ending with ".pdf" suffix
-                if urlparse(href).path.endswith(".pdf"):
+                if urlparse(href).path.lower().endswith(".pdf"):
                     self.document_list.append(
                         {
                             "url": href,
