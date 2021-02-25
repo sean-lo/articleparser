@@ -5,7 +5,7 @@ routines regarding extraction of images, videos, links etc., and the
 `ArticleExtractor` subclass which contains routines extracting content regarding
 web articles (author, title, description, keywords, article text).
 
-Written December 2020.
+Written February 2021.
 """
 
 # Python 3.7 onwards, for annotations with standard collections
@@ -101,6 +101,8 @@ class AssetExtractor(object):
     -------
     get_assets()
         Finds tags from `ASSET_TAGS` and processes them.
+    get_documents()
+        Gets all hyperlinks to documents in HTML.
     get_pictures()
         Gets images from `self.soup` and stores them in `self.image_list`.
     set_base_tag()
@@ -1048,7 +1050,7 @@ class AssetExtractor(object):
 
         The suffixes allowed are listed in `cls.IMAGE_MIME_SUFFIXES`.
 
-        Written December 2020.
+        Written February 2021.
 
         Parameters
         ----------
@@ -1535,41 +1537,6 @@ class ArticleExtractor(AssetExtractor):
         "body",  # will default to returning body as last resort
     ]
 
-    AUTHOR_SELECTORS = [
-        "head meta[property='dable:author']",
-        "a[rel='author']",
-        "a[href*='/author']",
-        "a[href*='/authors']",
-        "a.author",
-        "a.authors",
-        "a.author-url",
-        "a.author-name",
-        "a[href*='/profile']",
-        "a[href*='/people']",
-        "a[href*='/byline']",
-        "a[href*='/penulis']",  # Indonesian
-        "[id='penulis']",  # Indonesian
-        "[itemprop='author']",
-        "span[itemprop='author']",
-        "p.byline",
-        ".byline",
-        "[id='author-byline']",
-        "span.author",
-        "span.author-name",
-        "span.news-author",
-        "span.post-author",
-        "span.author-post",
-        "span.meta-author",
-        "div.author",
-        "div.author-name",
-        "div.author-names",
-        "div.author-info",
-        "div.author-text",
-        "p.author",
-        ".author",
-        "div.reporter",
-    ]
-
     def __init__(
         self,
         soup: bs4.BeautifulSoup,
@@ -1664,6 +1631,7 @@ class ArticleExtractor(AssetExtractor):
     def _process_short_field(
         text: str,
     ) -> str:
+        """Strips leading/trailing whitespace and performs NFKC normalization."""
         # strips leading and trailing whitespace
         text = text.strip()
         # normalization: replaces "\u00a0" and "\xa0" with single whitespace
@@ -2096,7 +2064,7 @@ class ArticleExtractor(AssetExtractor):
         - Uses description from OGP metadata (if available)
         - Gets <meta> tag(s) in <head> with `name="twitter:description"`
 
-        Written December 2020.
+        Written February 2021.
 
         Parameters
         ----------
@@ -2220,7 +2188,7 @@ class ArticleExtractor(AssetExtractor):
         - Gets <a> tags with `rel="tag"`
         - Gets <a> tags with `href` a URL that represents a tag
 
-        Written December 2020.
+        Written February 2021.
 
         Parameters
         ----------
@@ -2228,7 +2196,7 @@ class ArticleExtractor(AssetExtractor):
 
         Returns
         -------
-        keywordlist : list[str]
+        all_keywords : list[str]
             A list (possibly empty) of keywords of the article.
         method : list[str]
             The methods of extraction used, from the following:
@@ -2303,6 +2271,29 @@ class ArticleExtractor(AssetExtractor):
         self,
         keywords: list[str],
     ) -> list[str]:
+        """Processes keywords list found by `extract_keywords()`.
+
+        Performs the following:
+        - String normalization of each keyword (using `_process_short_field()`);
+        - Removes duplicates (case-sensitive);
+        - For case-insensitive removal of duplicates, selects one
+          "representative" to preserve, according to the following priority:
+            Title Case, UPPERCASE, lowercase, oTherCasE
+        - Sorts the list of keywords.
+
+        Written February 2021.
+
+        Parameters
+        ----------
+        keywords : list[str]
+            The original list of keywords.
+
+        Returns
+        -------
+        new_keywords : list[str]
+            The modified list of keywords.
+        """
+
         # short text preprocessing
         keywords = [self._process_short_field(x) for x in keywords]
 
@@ -2319,16 +2310,16 @@ class ArticleExtractor(AssetExtractor):
             if len(option_list) == 1:
                 new_keywords.append(option_list[0])
                 continue
-            lower = None
             title = None
             upper = None
+            lower = None
             for option in option_list:
-                if option.islower():
-                    lower = option
-                elif option.istitle():
+                if option.istitle():
                     title = option
                 elif option.isupper():
                     upper = option
+                elif option.islower():
+                    lower = option
             if title:
                 new_keywords.append(title)
             elif upper:
@@ -2513,7 +2504,7 @@ class ArticleExtractor(AssetExtractor):
           then perform optional cleaning
           (such as to remove "multi-part" titles).
 
-        Written December 2020.
+        Written February 2021.
 
         Parameters
         ----------
@@ -2523,7 +2514,7 @@ class ArticleExtractor(AssetExtractor):
         Returns
         -------
         title : str or None
-            The title article.
+            The title for the article.
         method : {"json_ld_headline", "json_ld_name", "ogp",
                   "itemprop_headline", "h1", "h1_title_headline",
                   "title", "title_cleaned", None}
@@ -2687,6 +2678,8 @@ class ArticleExtractor(AssetExtractor):
                 self.base_tag = largest_choice
                 return
         else:
+            # In practice, never raised because the last selector in
+            # `BASE_TAG_SELECTORS` is the body itself.
             raise ValueError
 
     @staticmethod
@@ -3102,7 +3095,7 @@ class ArticleExtractor(AssetExtractor):
         extracting any hyperlinks and storing it in `self.inline_links_list`,
         and obtain its text.
 
-        Written January 2021.
+        Written February 2021.
 
         Parameters
         ----------

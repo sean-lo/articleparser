@@ -24,9 +24,21 @@ LOGGER = logging.getLogger(__name__)
 
 def make_soup(
     f: Union[AnyStr, Path, IO],
-    parser: str = None,
+    *,
+    parser: str = None,  # keyword-only argument
 ) -> bs4.BeautifulSoup:
     """Make soup object.
+
+    Reads from either a filepath, or an object of type `IO`, with encoding
+    "utf-8".
+
+    Thereafter, performs regular expression operations to remove certain
+    malformed HTML sequences.
+
+    Lastly, creates `bs4.BeautifulSoup` object with `parser` as specified,
+    defaulting to "html5lib".
+
+    Written February 2021.
 
     Parameters
     ----------
@@ -91,6 +103,17 @@ def make_soup(
 
 
 def remove_iframes_in_head(html_doc: str) -> str:
+    """Removes `iframe` tags in `head`.
+
+    Iteratively removes all `iframe` tags in `head` until none remain,
+    since in HTML5 these `iframe` elements are not allowed and
+    will cause the "html5lib" parser to start the `body` tag prematurely:
+    https://www.w3.org/TR/html52/document-metadata.html#the-head-element
+
+    Returns the resulting string.
+
+    Written February 2021.
+    """
     IFRAME_IN_HEAD_REGEX = re.compile(
         r"""
             (?P<before>                 # "before" capturing group, 
@@ -116,6 +139,17 @@ def remove_iframes_in_head(html_doc: str) -> str:
 
 
 def remove_noscripts_in_head(html_doc: str) -> str:
+    """Removes `noscript` tags in `head`.
+
+    Iteratively removes all `noscript` tags in `head` until none remain,
+    since in HTML5 these `noscript` elements are not allowed and
+    will cause the "html5lib" parser to start the `body` tag prematurely:
+    https://www.w3.org/TR/html52/document-metadata.html#the-head-element
+
+    Returns the resulting string.
+
+    Written February 2021.
+    """
     NOSCRIPT_IN_HEAD_REGEX = re.compile(
         r"""
             (?P<before>                 # "before" capturing group, 
@@ -142,6 +176,17 @@ def remove_noscripts_in_head(html_doc: str) -> str:
 
 
 def remove_scripts_in_head(html_doc: str) -> str:
+    """Removes `script` tags in `head`.
+
+    Iteratively removes all `script` tags in `head` until none remain,
+    since in HTML5 these `script` elements are not allowed and
+    will cause the "html5lib" parser to start the `body` tag prematurely:
+    https://www.w3.org/TR/html52/document-metadata.html#the-head-element
+
+    Returns the resulting string.
+
+    Written February 2021.
+    """
     SCRIPT_IN_HEAD_REGEX = re.compile(
         r"""
             (?P<before>                 # "before" capturing group, 
@@ -165,6 +210,13 @@ def remove_scripts_in_head(html_doc: str) -> str:
         if new_html_doc == html_doc:
             return new_html_doc
         html_doc = new_html_doc
+
+
+def extend_config(config, config_items):
+    for key, value in config_items.items():
+        if hasattr(config, key):
+            setattr(config, key, value)
+    return config
 
 
 def parse_dt_str(timestr: str) -> str:
@@ -204,7 +256,7 @@ def get_xpath_selector_of_soup_tag(
     element: bs4.element.PageElement,
     reduced: bool = False,
 ) -> str:
-    """Generate xpath of soup element.
+    """Generate XPath of soup element.
 
     Args:
         element: bs4.element.PageElement
@@ -273,10 +325,3 @@ def get_css_selector_of_soup_tag(
 def get_child_text(tag: bs4.element.Tag) -> str:
     # https://dom.spec.whatwg.org/#concept-child-text-content
     return "".join([x for x in tag.contents if isinstance(tag, bs4.element.NavigableString)])
-
-
-def extend_config(config, config_items):
-    for key, value in config_items.items():
-        if hasattr(config, key):
-            setattr(config, key, value)
-    return config

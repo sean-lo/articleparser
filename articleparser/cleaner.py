@@ -21,7 +21,7 @@ from articleparser.settings import (
     IMAGE_AND_MULTIMEDIA_TAGS,
     EMBEDDED_CONTENT_TAGS,
     LEFT_NOSPACE_PUNCTUATION,
-    RIGHT_NOSPACE_PUNCTUATION
+    RIGHT_NOSPACE_PUNCTUATION,
 )
 from articleparser.util import extend_config
 
