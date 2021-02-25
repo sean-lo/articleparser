@@ -50,21 +50,18 @@ class AssetExtractor(object):
     We extract images via `get_pictures()`, and videos and others
     (external links, comment areas) via `get_assets()`.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
     soup : bs4.BeautifulSoup
         The HTML document.
-    filepath : str
-        The filepath of the HTML file.
     page_url : str, optional
         The page URL of the article, or None if not provided.
 
     Attributes
     ----------
     soup
-    filepath
     page_url
     base_tag : bs4.element.Tag
         A `bs4.element.Tag` object representing the main section of the HTML
@@ -220,11 +217,9 @@ class AssetExtractor(object):
     def __init__(
         self,
         soup: bs4.BeautifulSoup,
-        filepath: str,
         page_url: str = None,
     ):
         self.soup = soup
-        self.filepath = filepath
         self.page_url = page_url
         self.base_tag = None
         self.video_list = []
@@ -1410,8 +1405,6 @@ class ArticleExtractor(AssetExtractor):
     soup : bs4.BeautifulSoup
         The HTML document.
         Same as in AssetExtractor.
-    filepath : str
-        The filepath of the HTML file.
         Same as in AssetExtractor.
     metadata : dict[str, dict[str, Any]]
         The article metadata.
@@ -1422,7 +1415,6 @@ class ArticleExtractor(AssetExtractor):
     Attributes
     ----------
     soup
-    filepath
     metadata
     page_url
     base_tag : bs4.element.Tag
@@ -1580,13 +1572,10 @@ class ArticleExtractor(AssetExtractor):
     def __init__(
         self,
         soup: bs4.BeautifulSoup,
-        filepath: str,
         metadata: dict[str, dict[str, Any]],
         page_url: str = None,
-        config: Config = None,
     ):
-        super().__init__(soup, filepath, page_url)
-        self.config = config or Config()
+        super().__init__(soup, page_url)
 
         self.metadata = metadata
         self.inline_links_list = []

@@ -3,7 +3,7 @@
 This module contains the `Cleaner` class that performs customizable 
 cleaning of HTML documents, required before content extraction.
 
-Written December 2020.
+Written February 2021.
 """
 
 # Python 3.7 onwards, for annotations with standard collections
@@ -31,10 +31,14 @@ LOGGER = logging.getLogger(__name__)
 class Cleaner:
     """Perform initial processing on HTML.
 
+    Written February 2021.
+
     Parameters
     ----------
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object representing the document.
+    uuid : str, optional
+        An identifier of the HTML document, for external use.
 
     Attributes
     ----------
@@ -66,12 +70,12 @@ class Cleaner:
     def __init__(
         self,
         soup: bs4.BeautifulSoup,
-        filepath: str = None,
+        uuid: str = None,
         config: Config = None,
         **kwargs,
     ):
         self.soup = soup
-        self.filepath = filepath
+        self.uuid = uuid
         self.config = config or Config()
         self.config = extend_config(self.config, kwargs)
 
@@ -535,14 +539,14 @@ class Cleaner:
     def clean(self) -> None:
         """Cleans HTML document and returns the `bs4.BeautifulSoup` object.
 
-        Written December 2020.
+        Written February 2021.
 
         Returns
         -------
         None
         """
         if self.soup is None:
-            LOGGER.error("No soup supplied for filepath: {}!".format(self.filepath))
+            LOGGER.error("No soup supplied for: {}!".format(self.uuid))
             return
         if self.config.decompose:
             self.decompose_tags(self.config.DECOMPOSE_TAGS)

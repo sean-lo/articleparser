@@ -40,10 +40,16 @@ class Article(object):
     ----------
     filepath : str
         The filepath containing the HTML document.
+    soup : bs4.BeautifulSoup, optional
+        The `bs4.BeautifulSoup` object representing the document.
+        If None, will be loaded from `filepath` with `make_soup()`.
+    uuid : str, optional
+        An identifier of the HTML document, for external use.
 
     Attributes
     ----------
     filepath
+    uuid
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object stored at `filepath`, as loaded by
         `make_soup()`.
@@ -137,21 +143,30 @@ class Article(object):
 
     def __init__(
         self,
-        filepath: Union[str, Path],
+        *,  # all arguments are keyword-only
+        filepath: Union[str, Path] = None,
         soup: bs4.BeautifulSoup = None,
+        uuid: str = None,
         config: Config = None,
         **kwargs,
     ):
         if isinstance(filepath, str):
             filepath = Path(filepath)
-
         self.filepath = filepath
+
         if soup:
             self.soup = soup
             self.backup_soup = copy.copy(soup)
-        else:
+        elif filepath:
             self.soup = make_soup(self.filepath)
             self.backup_soup = make_soup(self.filepath)
+        else:
+            raise ValueError("Must provide at least one of filepath and soup!")
+
+        if uuid:
+            self.uuid = uuid
+        else:
+            self.uuid = str(filepath)
 
         self.config = config or Config()
         self.config = extend_config(self.config, kwargs)
@@ -174,7 +189,7 @@ class Article(object):
         before performing asset extraction and content extraction with
         `ArticleExtractor`. Collected data is stored in `self.content`.
 
-        Written December 2020.
+        Written February 2021.
 
         Parameters
         ----------
@@ -193,19 +208,18 @@ class Article(object):
         articleparser.cleaner.Cleaner
             Cleans HTML.
         """
-        LOGGER.info("Parsing article from: {}".format(self.filepath))
+        LOGGER.info("Parsing article from: {}".format(self.uuid))
 
         if self.soup is None:
-            LOGGER.error("Soup parsing failed for: {}".format(self.filepath))
+            LOGGER.error("Soup parsing failed for: {}".format(self.uuid))
             return
 
         # code for content extraction from soup.head
-        metadata = extract_metadata(self.soup, str(self.filepath))
+        metadata = extract_metadata(self.soup, self.uuid)
         LOGGER.debug("Collected article metadata.")
 
         self.extractor = ArticleExtractor(
             soup=self.soup,
-            filepath=str(self.filepath),
             metadata=metadata,
             config=self.config,
         )

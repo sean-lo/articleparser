@@ -4,17 +4,17 @@ This module contains all functions extracting document metadata from a
 HTML document; fitting data into schema are outside the scope of this module
 and belongs in extractor.py instead.
 
-Written December 2020.
+Written February 2021.
 
 Routine Listings
 ----------------
-extract_opengraph(soup, filepath)
+extract_opengraph(soup, uuid)
     Extract metadata from OpenGraph Protocol tags (https://ogp.me/).
-extract_json_ld_dictlist(soup, filepath)
+extract_json_ld_dictlist(soup, uuid)
     Extract nodes from JSON-LD named graphs.
-extract_json_ld(soup, filepath)
+extract_json_ld(soup, uuid)
     Extract metadata from JSON-LD data format (https://json-ld.org/).
-extract_metadata(soup, filepath)
+extract_metadata(soup, uuid)
     Wrapper function around all metadata extraction functions.
 """
 
@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 
 def extract_opengraph(
     soup: bs4.BeautifulSoup,
-    filepath: str,
+    uuid: str = None,
 ) -> dict[str, Union[str, list[str], None]]:
     """Extract metadata from OpenGraph Protocol tags (https://ogp.me/).
 
@@ -51,14 +51,14 @@ def extract_opengraph(
     have an "og:type" value of "article".
     Other namespaces exist.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object representing the HTML document.
-    filepath : str
-        The filepath of the HTML document.
+    uuid : str, optional
+        An identifier of the HTML document, for external use.
 
     Returns
     -------
@@ -220,7 +220,7 @@ def extract_opengraph(
 
 def extract_json_ld_dictlist(
     soup: bs4.BeautifulSoup,
-    filepath: str,
+    uuid: str = None,
 ) -> list[dict[Any]]:
     """Extract nodes from JSON-LD named graphs.
 
@@ -230,14 +230,14 @@ def extract_json_ld_dictlist(
     Nodes group together in named graphs in JSON-LD are first extracted; see
     https://json-ld.org/spec/latest/json-ld/#named-graphs.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object representing the HTML document.
-    filepath : str
-        The filepath of the HTML document.
+    uuid : str, optional
+        An identifier of the HTML document, for external use.
 
     Returns
     -------
@@ -252,7 +252,7 @@ def extract_json_ld_dictlist(
             item = json.loads(tag.string, strict=False)
         except json.JSONDecodeError:
             # TODO known issue; need to evaluate "+" as string concatenation
-            LOGGER.debug("Could not decode JSON-LD in: {}".format(filepath))
+            LOGGER.debug("Could not decode JSON-LD in: {}".format(uuid))
             LOGGER.debug("Tag string: {}".format(tag.string))
             continue
         if isinstance(item, list):
@@ -260,7 +260,7 @@ def extract_json_ld_dictlist(
         elif isinstance(item, dict):
             json_ld_dictlist_graph.append(item)
         else:
-            LOGGER.debug("JSON_LD entry was not of type list or dict, in: {}".format(filepath))
+            LOGGER.debug("JSON_LD entry was not of type list or dict, in: {}".format(uuid))
             pass
 
     json_ld_dictlist = []
@@ -281,7 +281,7 @@ def extract_json_ld_dictlist(
             else:
                 LOGGER.debug(
                     "JSON_LD dict contained '@graph' but item was not of type list, in: {}".format(
-                        filepath
+                        uuid
                     )
                 )
         else:
@@ -292,7 +292,7 @@ def extract_json_ld_dictlist(
 
 def extract_json_ld(
     soup: bs4.BeautifulSoup,
-    filepath: str,
+    uuid: str = None,
 ) -> dict[str, Union[str, list[str], list[dict[str, Optional[str]]]]]:
     """Extract metadata from JSON-LD data format (https://json-ld.org/).
 
@@ -306,14 +306,14 @@ def extract_json_ld(
     Thereafter nodes with "@type" "NewsArticle", "Article" or "WebPage" are
     considered and their attributes unpacked.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object representing the HTML document.
-    filepath : str
-        The filepath of the HTML document.
+    uuid : str, optional
+        An identifier of the HTML document, for external use.
 
     Returns
     -------
@@ -340,7 +340,7 @@ def extract_json_ld(
         "image" : list[str] (each validated by validate_url())
         "keywords" : list[str], each non-empty
     """
-    json_ld_dictlist = extract_json_ld_dictlist(soup, filepath)
+    json_ld_dictlist = extract_json_ld_dictlist(soup, uuid)
 
     # https://schema.org/NewsArticle
     # [NewsArticle, [AnalysisNewsArticle, AskPublicNewsArticle,
@@ -555,18 +555,18 @@ def extract_json_ld(
 
 def extract_metadata(
     soup: bs4.BeautifulSoup,
-    filepath: str,
+    uuid: str = None,
 ) -> dict[str, dict[str, Any]]:
     """Wrapper function around all metadata extraction functions.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object representing the HTML document.
-    filepath : str
-        The filepath of the HTML document.
+    uuid : str, optional
+        An identifier of the HTML document, for external use.
 
     Returns
     -------
@@ -578,8 +578,8 @@ def extract_metadata(
             The OGP metadata as returned by `extract_opengraph()`.
     """
     metadata = {}
-    metadata["json_ld"] = extract_json_ld(soup, filepath)
+    metadata["json_ld"] = extract_json_ld(soup, uuid)
     LOGGER.debug("Collected JSON-LD metadata.")
-    metadata["opengraph"] = extract_opengraph(soup, filepath)
+    metadata["opengraph"] = extract_opengraph(soup, uuid)
     LOGGER.debug("Collected OpenGraph Protocol metadata.")
     return metadata
