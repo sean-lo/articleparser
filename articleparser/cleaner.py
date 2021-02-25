@@ -39,6 +39,8 @@ class Cleaner:
         The `bs4.BeautifulSoup` object representing the document.
     uuid : str, optional
         An identifier of the HTML document, for external use.
+    config : articleparser.config.Config, optional
+        A Config object consisting optional settings.
 
     Attributes
     ----------

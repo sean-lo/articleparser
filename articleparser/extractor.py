@@ -1398,7 +1398,7 @@ class ArticleExtractor(AssetExtractor):
     text. The section on extracting article text involves determining the "top
     tag" (in `set_top_tag()`) which is the most likely to contain text content.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
@@ -1408,6 +1408,8 @@ class ArticleExtractor(AssetExtractor):
         Same as in AssetExtractor.
     metadata : dict[str, dict[str, Any]]
         The article metadata.
+    config : articleparser.config.Config
+        A Config object consisting optional settings.
     page_url : str, optional
         The page URL of the article, or None if not provided.
         Same as in AssetExtractor.
@@ -1416,6 +1418,7 @@ class ArticleExtractor(AssetExtractor):
     ----------
     soup
     metadata
+    config
     page_url
     base_tag : bs4.element.Tag
         A `bs4.element.Tag` object representing the main section of the HTML
@@ -1573,9 +1576,11 @@ class ArticleExtractor(AssetExtractor):
         self,
         soup: bs4.BeautifulSoup,
         metadata: dict[str, dict[str, Any]],
+        config: Config,
         page_url: str = None,
     ):
         super().__init__(soup, page_url)
+        self.config = config
 
         self.metadata = metadata
         self.inline_links_list = []

@@ -3,7 +3,7 @@
 The `Article` class has a `parse()` method which extracts structured data
 from a HTML document, provided in the form of a `bs4.BeautifulSoup` object.
 
-Written December 2020.
+Written February 2021.
 """
 
 # Python 3.7 onwards, for annotations with standard collections
@@ -34,7 +34,7 @@ class Article(object):
     Contains the `parse()` method, which parses a web article represented as
     a `bs4.BeautifulSoup` object, and obtains structured data from it.
 
-    Written December 2020.
+    Written February 2021.
 
     Parameters
     ----------
@@ -45,11 +45,16 @@ class Article(object):
         If None, will be loaded from `filepath` with `make_soup()`.
     uuid : str, optional
         An identifier of the HTML document, for external use.
+    config : articleparser.config.Config, optional
+        A Config object consisting optional settings.
+    **kwargs : optional
+        Extra optional arguments to extend `config`.
 
     Attributes
     ----------
     filepath
     uuid
+    config
     soup : bs4.BeautifulSoup
         The `bs4.BeautifulSoup` object stored at `filepath`, as loaded by
         `make_soup()`.
